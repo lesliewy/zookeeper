@@ -61,6 +61,7 @@ public class RequestThrottler extends ZooKeeperCriticalThread {
 
     private static final Logger LOG = LoggerFactory.getLogger(RequestThrottler.class);
 
+    //新的请求都会进入这个阻塞队列，串行执行
     private final LinkedBlockingQueue<Request> submittedRequests = new LinkedBlockingQueue<Request>();
 
     private final ZooKeeperServer zks;
@@ -144,6 +145,7 @@ public class RequestThrottler extends ZooKeeperCriticalThread {
                     break;
                 }
 
+                //取出一个请求
                 Request request = submittedRequests.take();
                 if (Request.requestOfDeath == request) {
                     break;
@@ -163,6 +165,7 @@ public class RequestThrottler extends ZooKeeperCriticalThread {
                             request = null;
                             break;
                         }
+                        //只有在处理的请求数小于最大请求数时才会处理，否则在这等待
                         if (zks.getInProcess() < maxRequests) {
                             break;
                         }
@@ -185,6 +188,7 @@ public class RequestThrottler extends ZooKeeperCriticalThread {
                       request.setIsThrottled(true);
                       ServerMetrics.getMetrics().THROTTLED_OPS.add(1);
                     }
+                    // 真正处理请求的还是zookeeperServer
                     zks.submitRequestNow(request);
                 }
             }

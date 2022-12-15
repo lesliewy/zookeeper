@@ -94,6 +94,7 @@ import org.slf4j.LoggerFactory;
  * Although this is not a problem for the leader election, it could be a problem
  * when consolidating peer communication. This is to be verified, though.
  *
+ * 管理连接.
  */
 
 public class QuorumCnxManager {
@@ -699,6 +700,7 @@ public class QuorumCnxManager {
         } else {
             /*
              * Start a new connection if doesn't have one already.
+             * 将消息放入sid对应的blockingQueue中.
              */
             BlockingQueue<ByteBuffer> bq = queueSendMap.computeIfAbsent(sid, serverId -> new CircularBlockingQueue<>(SEND_CAPACITY));
             addToSendQueue(bq, b);

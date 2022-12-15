@@ -97,7 +97,9 @@ public class SessionTrackerImpl extends ZooKeeperCriticalThread implements Sessi
      */
     public static long initializeNextSessionId(long id) {
         long nextSid;
+        // 高位8个0, 低位16个0.  无符号右移为了高8位没有符号位，都是0.便于发现myid.
         nextSid = (Time.currentElapsedTime() << 24) >>> 8;
+        // 高8位是myid, 后56位是时间的随机.
         nextSid = nextSid | (id << 56);
         if (nextSid == EphemeralType.CONTAINER_EPHEMERAL_OWNER) {
             ++nextSid;  // this is an unlikely edge case, but check it just in case
@@ -154,6 +156,9 @@ public class SessionTrackerImpl extends ZooKeeperCriticalThread implements Sessi
         return sw.toString();
     }
 
+    /**
+     * 判断session是否到期，并进行处理，可以看到这本质上也是遍历优先队列，每次找到最先到期的session进行判断。
+     */
     @Override
     public void run() {
         try {
@@ -166,6 +171,7 @@ public class SessionTrackerImpl extends ZooKeeperCriticalThread implements Sessi
 
                 for (SessionImpl s : sessionExpiryQueue.poll()) {
                     ServerMetrics.getMetrics().STALE_SESSIONS_EXPIRED.add(1);
+                    // 先标记session状态。因为清理是异步的，防止此间有请求进来。
                     setSessionClosing(s.sessionId);
                     expirer.expire(s);
                 }

@@ -46,6 +46,7 @@ public class ExpiryQueue<E> {
     private final int expirationInterval;
 
     public ExpiryQueue(int expirationInterval) {
+        // 即tickTime
         this.expirationInterval = expirationInterval;
         nextExpirationTime.set(roundToNextInterval(Time.currentElapsedTime()));
     }
@@ -80,10 +81,13 @@ public class ExpiryQueue<E> {
      * @param timeout  timout in milliseconds
      * @return time at which the element is now set to expire if
      *                 changed, or null if unchanged
+     * 会话激活.
+     *
      */
     public Long update(E elem, int timeout) {
         Long prevExpiryTime = elemMap.get(elem);
         long now = Time.currentElapsedTime();
+        // 新的超时时间. 尾部变为0 + tickTime.
         Long newExpiryTime = roundToNextInterval(now + timeout);
 
         if (newExpiryTime.equals(prevExpiryTime)) {
@@ -103,10 +107,12 @@ public class ExpiryQueue<E> {
                 set = existingSet;
             }
         }
+        // 添加到新的区块.
         set.add(elem);
 
         // Map the elem to the new expiry time. If a different previous
         // mapping was present, clean up the previous expiry bucket.
+        // 移除老的会话区块.
         prevExpiryTime = elemMap.put(elem, newExpiryTime);
         if (prevExpiryTime != null && !newExpiryTime.equals(prevExpiryTime)) {
             Set<E> prevSet = expiryMap.get(prevExpiryTime);

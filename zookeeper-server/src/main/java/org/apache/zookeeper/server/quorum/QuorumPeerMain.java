@@ -126,6 +126,7 @@ public class QuorumPeerMain {
         }
 
         // Start and schedule the the purge task
+        // 启动历史文件清理器.
         DatadirCleanupManager purgeMgr = new DatadirCleanupManager(
             config.getDataDir(),
             config.getDataLogDir(),
@@ -133,6 +134,7 @@ public class QuorumPeerMain {
             config.getPurgeInterval());
         purgeMgr.start();
 
+        // 集群启动、单机启动
         if (args.length == 1 && config.isDistributed()) {
             runFromConfig(config);
         } else {
@@ -164,6 +166,7 @@ public class QuorumPeerMain {
             ServerCnxnFactory cnxnFactory = null;
             ServerCnxnFactory secureCnxnFactory = null;
 
+            // 创建并初始化ServerCnxnFactory
             if (config.getClientPortAddress() != null) {
                 cnxnFactory = ServerCnxnFactory.createFactory();
                 cnxnFactory.configure(config.getClientPortAddress(), config.getMaxClientCnxns(), config.getClientPortListenBacklog(), false);
@@ -174,6 +177,10 @@ public class QuorumPeerMain {
                 secureCnxnFactory.configure(config.getSecureClientPortAddress(), config.getMaxClientCnxns(), config.getClientPortListenBacklog(), true);
             }
 
+            /**
+             * 创建并初始化quorumPeer.
+             * quorumPeer代表zk集群中的一个实例.
+             */
             quorumPeer = getQuorumPeer();
             quorumPeer.setTxnFactory(new FileTxnSnapLog(config.getDataLogDir(), config.getDataDir()));
             quorumPeer.enableLocalSessions(config.areLocalSessionsEnabled());
@@ -190,6 +197,7 @@ public class QuorumPeerMain {
             quorumPeer.setObserverMasterPort(config.getObserverMasterPort());
             quorumPeer.setConfigFileName(config.getConfigFilename());
             quorumPeer.setClientPortListenBacklog(config.getClientPortListenBacklog());
+            // 创建内存数据库zkDatabase
             quorumPeer.setZKDatabase(new ZKDatabase(quorumPeer.getTxnFactory()));
             quorumPeer.setQuorumVerifier(config.getQuorumVerifier(), false);
             if (config.getLastSeenQuorumVerifier() != null) {

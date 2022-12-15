@@ -80,6 +80,9 @@ public class JettyAdminServer implements AdminServer {
     private final String commandUrl;
     private ZooKeeperServer zkServer;
 
+    /**
+     * localhost:8080 默认的. 也就是说zk是跑在jetty中的，当然可以修改admin的端口.
+     */
     public JettyAdminServer() throws AdminServerException, IOException, GeneralSecurityException {
         this(
             System.getProperty("zookeeper.admin.serverAddress", DEFAULT_ADDRESS),

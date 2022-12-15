@@ -92,6 +92,7 @@ import org.slf4j.LoggerFactory;
  * The tree maintains two parallel data structures: a hashtable that maps from
  * full paths to DataNodes and a tree of DataNodes. All accesses to a path is
  * through the hashtable. The tree is traversed only when serializing to disk.
+ * 数据在内存中中数据结构.
  */
 public class DataTree {
 
@@ -141,6 +142,7 @@ public class DataTree {
 
     /**
      * the path trie that keeps track of the quota nodes in this datatree
+     * Trie树. 前缀树.
      */
     private final PathTrie pTrie = new PathTrie();
 
@@ -151,6 +153,7 @@ public class DataTree {
 
     /**
      * This hashtable lists the paths of the ephemeral nodes of a session.
+     * 会话与其临时节点的索引
      */
     private final Map<Long, HashSet<String>> ephemerals = new ConcurrentHashMap<Long, HashSet<String>>();
 

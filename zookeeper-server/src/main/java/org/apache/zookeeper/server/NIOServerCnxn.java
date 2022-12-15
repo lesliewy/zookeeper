@@ -319,6 +319,7 @@ public class NIOServerCnxn extends ServerCnxn {
 
     /**
      * Handles read/write IO on connection.
+     * 在建立连接之后，由这个类开始处理io
      */
     void doIO(SelectionKey k) throws InterruptedException {
         try {
@@ -351,6 +352,7 @@ public class NIOServerCnxn extends ServerCnxn {
                         isPayload = true;
                     }
                     if (isPayload) { // not the case for 4letterword
+                        // 处理请求.
                         readPayload();
                     } else {
                         // four letter words take care
@@ -390,6 +392,10 @@ public class NIOServerCnxn extends ServerCnxn {
         }
     }
 
+    /**
+     * 请求的真是处理类是zookeeperServer
+     * @throws IOException
+     */
     protected void readRequest() throws IOException {
         zkServer.processPacket(this, incomingBuffer);
     }

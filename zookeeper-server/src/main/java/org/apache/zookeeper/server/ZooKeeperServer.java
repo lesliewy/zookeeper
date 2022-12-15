@@ -722,11 +722,15 @@ public class ZooKeeperServer implements SessionExpirer, ServerStats.Provider {
         if (sessionTracker == null) {
             createSessionTracker();
         }
+        //启动会话管理器
         startSessionTracker();
+        //配置请求处理链并启动处理线程---责任链模式
         setupRequestProcessors();
 
+        //启动限流线程
         startRequestThrottler();
 
+        //注册JMX服务
         registerJMX();
 
         startJvmPauseMonitor();
@@ -780,6 +784,7 @@ public class ZooKeeperServer implements SessionExpirer, ServerStats.Provider {
     }
 
     protected void createSessionTracker() {
+        // 创建session管理器. 会创建一个sessionId.
         sessionTracker = new SessionTrackerImpl(this, zkDb.getSessionWithTimeOuts(), tickTime, createSessionTrackerServerId, getZooKeeperServerListener());
     }
 
@@ -1133,6 +1138,10 @@ public class ZooKeeperServer implements SessionExpirer, ServerStats.Provider {
         enqueueRequest(si);
     }
 
+    /**
+     * 请求解析完成，加入到限流流程
+     * @param si
+     */
     public void enqueueRequest(Request si) {
         if (requestThrottler == null) {
             synchronized (this) {
@@ -1155,6 +1164,16 @@ public class ZooKeeperServer implements SessionExpirer, ServerStats.Provider {
         requestThrottler.submitRequest(si);
     }
 
+    /**
+     * 通过限流处理之后，zks会将请求加入到请求处理链的first
+     *
+     * //单机处理链
+     * PrepRequestProcessor->SyncRequestProcessor-> FinalRequestProcessor
+     * PrepRequestProcessor是在对不同type的请求进行参数验证与执行操作，通过之后，
+     * 请求会被加入到SyncRequestProcessor的请求队列中，SyncRequestProcessor将处理改变提交到本地磁盘中(同步写入日志，异步生成快照)，
+     * 最后FinalRequestProcessor进行处理，将修改同步到内存zkDatabase中，之后构造返回消息并发送。
+     * @param si
+     */
     public void submitRequestNow(Request si) {
         if (firstProcessor == null) {
             synchronized (this) {
@@ -1688,6 +1707,7 @@ public class ZooKeeperServer implements SessionExpirer, ServerStats.Provider {
                     si.setLargeRequestSize(length);
                 }
                 si.setOwner(ServerCnxn.me);
+                // 处理请求
                 submitRequest(si);
             }
         }

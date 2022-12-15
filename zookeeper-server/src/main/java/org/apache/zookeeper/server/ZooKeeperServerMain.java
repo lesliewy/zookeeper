@@ -149,12 +149,14 @@ public class ZooKeeperServerMain {
             final CountDownLatch shutdownLatch = new CountDownLatch(1);
             zkServer.registerServerShutdownHandler(new ZooKeeperServerShutdownHandler(shutdownLatch));
 
-            // Start Admin server
+            // Start Admin server  根据 zookeeper.admin.enableServer 配置选择jetty or dummy.
+            // 问题是dummy怎么跑？ 应该没法跑，默认是null
             adminServer = AdminServerFactory.createAdminServer();
             adminServer.setZooKeeperServer(zkServer);
             adminServer.start();
 
             boolean needStartZKServer = true;
+            // clientPortAddress 就是 127.0.0.1:2181 这种.
             if (config.getClientPortAddress() != null) {
                 cnxnFactory = ServerCnxnFactory.createFactory();
                 cnxnFactory.configure(config.getClientPortAddress(), config.getMaxClientCnxns(), config.getClientPortListenBacklog(), false);

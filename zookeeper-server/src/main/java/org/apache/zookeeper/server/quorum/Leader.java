@@ -592,6 +592,7 @@ public class Leader extends LearnerMaster {
         zk.registerJMX(new LeaderBean(this, zk), self.jmxLocalPeerBean);
 
         try {
+            // ZAB状态: DISCOVERY. 等待leader, learner发现，确定epoch。
             self.setZabState(QuorumPeer.ZabState.DISCOVERY);
             self.tick.set(0);
             zk.loadData();
@@ -600,9 +601,12 @@ public class Leader extends LearnerMaster {
 
             // Start thread that waits for connection requests from
             // new followers.
+            // 创建 follower接收器. 负责接收所有非leader发来的请求.
             cnxAcceptor = new LearnerCnxAcceptor();
             cnxAcceptor.start();
 
+            // 新的epoch: Leader接收到learner信息后，解析出zxid和sid, zxid中包含了epoch, 和当前leader的epoch进行比较.
+            // learner会进行等待，直到过半的learner已经向leader进行注册，同时更新了epoch_of_leader后，就可以确定集群的epoch了。
             long epoch = getEpochToPropose(self.getId(), self.getAcceptedEpoch());
 
             zk.setZxid(ZxidUtils.makeZxid(epoch, 0));
@@ -657,13 +661,15 @@ public class Leader extends LearnerMaster {
             // We have to get at least a majority of servers in sync with
             // us. We do this by waiting for the NEWLEADER packet to get
             // acknowledged
-
+            // 计算出新的epoch后，leader会通知learner,并等待响应。
             waitForEpochAck(self.getId(), leaderStateSummary);
             self.setCurrentEpoch(epoch);
             self.setLeaderAddressAndId(self.getQuorumAddress(), self.getId());
+            // ZAB状态
             self.setZabState(QuorumPeer.ZabState.SYNCHRONIZATION);
 
             try {
+                // 数据同步
                 waitForNewLeaderAck(self.getId(), zk.getZxid());
             } catch (InterruptedException e) {
                 shutdown("Waiting for a quorum of followers, only synced with sids: [ "
@@ -713,6 +719,7 @@ public class Leader extends LearnerMaster {
                 self.setZooKeeperServer(zk);
             }
 
+            // ZAB状态.
             self.setZabState(QuorumPeer.ZabState.BROADCAST);
             self.adminServer.setZooKeeperServer(zk);
 

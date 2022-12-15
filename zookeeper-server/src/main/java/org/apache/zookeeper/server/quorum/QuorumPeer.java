@@ -1129,15 +1129,19 @@ public class QuorumPeer extends ZooKeeperThread implements QuorumStats.Provider 
         if (!getView().containsKey(myid)) {
             throw new RuntimeException("My id " + myid + " not in the peer list");
         }
+        //加载磁盘数据
         loadDataBase();
+        //开启io服务
         startServerCnxnFactory();
         try {
             adminServer.start();
         } catch (AdminServerException e) {
             LOG.warn("Problem starting AdminServer", e);
         }
+        //进行选举.
         startLeaderElection();
         startJvmPauseMonitor();
+        //peer主循环
         super.start();
     }
 
@@ -1348,6 +1352,7 @@ public class QuorumPeer extends ZooKeeperThread implements QuorumStats.Provider 
     protected Election createElectionAlgorithm(int electionAlgorithm) {
         Election le = null;
 
+        // 固定为3, 参看 quorumPeerConfig中electionAlg
         //TODO: use a factory rather than a switch
         switch (electionAlgorithm) {
         case 1:
@@ -1355,6 +1360,7 @@ public class QuorumPeer extends ZooKeeperThread implements QuorumStats.Provider 
         case 2:
             throw new UnsupportedOperationException("Election Algorithm 2 is not supported.");
         case 3:
+            //服务器之间用于选举的连接管理类
             QuorumCnxManager qcm = createCnxnManager();
             QuorumCnxManager oldQcm = qcmRef.getAndSet(qcm);
             if (oldQcm != null) {
@@ -1363,8 +1369,10 @@ public class QuorumPeer extends ZooKeeperThread implements QuorumStats.Provider 
             }
             QuorumCnxManager.Listener listener = qcm.listener;
             if (listener != null) {
+                //与其他服务建立连接与监听
                 listener.start();
                 FastLeaderElection fle = new FastLeaderElection(this, qcm);
+                //开启选举算法消息收发线程
                 fle.start();
                 le = fle;
             } else {
@@ -1408,6 +1416,9 @@ public class QuorumPeer extends ZooKeeperThread implements QuorumStats.Provider 
 
     boolean shuttingDownLE = false;
 
+    /**
+     * quorumPeer核心工作就是不断检测当前实例的状态并处理。
+     */
     @Override
     public void run() {
         updateThreadName();
@@ -1451,6 +1462,7 @@ public class QuorumPeer extends ZooKeeperThread implements QuorumStats.Provider 
                 }
 
                 switch (getPeerState()) {
+                    // 初始状态就是LOOKING, 因为服务启动时执行选举.
                 case LOOKING:
                     LOG.info("LOOKING");
                     ServerMetrics.getMetrics().LOOKING_COUNT.add(1);
@@ -1487,6 +1499,7 @@ public class QuorumPeer extends ZooKeeperThread implements QuorumStats.Provider 
                             reconfigFlagClear();
                             if (shuttingDownLE) {
                                 shuttingDownLE = false;
+                                //开启选举
                                 startLeaderElection();
                             }
                             setCurrentVote(makeLEStrategy().lookForLeader());
@@ -1504,6 +1517,7 @@ public class QuorumPeer extends ZooKeeperThread implements QuorumStats.Provider 
                             reconfigFlagClear();
                             if (shuttingDownLE) {
                                 shuttingDownLE = false;
+                                //开启选举
                                 startLeaderElection();
                             }
                             setCurrentVote(makeLEStrategy().lookForLeader());
@@ -1548,6 +1562,7 @@ public class QuorumPeer extends ZooKeeperThread implements QuorumStats.Provider 
                 case LEADING:
                     LOG.info("LEADING");
                     try {
+                        // 创建leader实例.
                         setLeader(makeLeader(logFactory));
                         leader.lead();
                         setLeader(null);

@@ -57,7 +57,9 @@ public class FileTxnSnapLog {
     //the directory containing the
     //the snapshot directory
     final File snapDir;
+    // 主要负责日志的写入文件与读取，其数据是逐步写入的---对每次事务操作进行记录
     TxnLog txnLog;
+    // 主要负责快照的写入文件与读取，其保存的是内存树以及会话信息
     SnapShot snapLog;
     private final boolean autoCreateDB;
     private final boolean trustEmptySnapshot;
@@ -478,6 +480,7 @@ public class FileTxnSnapLog {
         File snapshotFile = new File(snapDir, Util.makeSnapshotName(lastZxid));
         LOG.info("Snapshotting: 0x{} to {}", Long.toHexString(lastZxid), snapshotFile);
         try {
+            //snapshot的写入
             snapLog.serialize(dataTree, sessionsWithTimeouts, snapshotFile, syncSnap);
         } catch (IOException e) {
             if (snapshotFile.length() == 0) {
@@ -581,6 +584,7 @@ public class FileTxnSnapLog {
     }
 
     /**
+     * log的添加方法
      * append the request to the transaction logs
      * @param si the request to be appended
      * @return true iff something appended, otw false

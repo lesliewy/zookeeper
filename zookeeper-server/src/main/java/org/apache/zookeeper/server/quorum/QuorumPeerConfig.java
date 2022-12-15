@@ -484,6 +484,7 @@ public class QuorumPeerConfig {
         // backward compatibility - dynamic configuration in the same file as
         // static configuration params see writeDynamicConfig()
         if (dynamicConfigFileStr == null) {
+            // 设置集群相关的配置.
             setupQuorumPeerConfig(zkProp, true);
             if (isDistributed() && isReconfigEnabled()) {
                 // we don't backup static config for standalone mode.
