@@ -71,6 +71,16 @@ import org.slf4j.LoggerFactory;
  * "myid" that contains the server id as an ASCII decimal value.
  *
  */
+
+/**
+ *  FinalRequestProcessor.processRequest(): 服务端接收客户端信息.
+ *  ZKDatabase -> DataTree: node操作.
+ *  quorumPeer.setTxnFactory(): 初始化事务日志(FileTxnLog), 快照日志(FileSnapLog).
+ *    事务日志是zk服务器之间为了一致性发送的数据.
+ *    快照日志即内存数据，即DataTree.
+ *
+ *
+ */
 @InterfaceAudience.Public
 public class QuorumPeerMain {
 

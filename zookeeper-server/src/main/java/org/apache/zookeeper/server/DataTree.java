@@ -104,6 +104,7 @@ public class DataTree {
      * This map provides a fast lookup to the datanodes. The tree is the
      * source of truth and is where all the locking occurs
      */
+    /** 内部用了concurrentHashMap来管理. */
     private final NodeHashMap nodes;
 
     private IWatchManager dataWatches;
@@ -530,6 +531,7 @@ public class DataTree {
             updateQuotaStat(lastPrefix, bytes, 1);
         }
         updateWriteStat(path, bytes);
+        /** 发布事件. */
         dataWatches.triggerWatch(path, Event.EventType.NodeCreated);
         childWatches.triggerWatch(parentName.equals("") ? "/" : parentName, Event.EventType.NodeChildrenChanged);
     }
